@@ -12,7 +12,6 @@ const getCA = (): string[] | undefined => {
   return undefined;
 };
 
-
 export interface Config {
   env: string;
   isProduction: boolean;
@@ -26,7 +25,7 @@ export interface Config {
     accessSecret: string;
     accessTokenExpireIn: string;
   };
- kafka: {
+  kafka: {
     brokers: string;
     clientId: string;
     groupId: string;
@@ -67,12 +66,12 @@ export const config: Config = {
     accessSecret: process.env.JWT_ACCESS_SECRET!,
     accessTokenExpireIn: process.env.JWT_ACCESS_EXPIRE_IN || "15m",
   },
- kafka: {
+  kafka: {
     brokers: process.env.APP_KAFKA_BROKER!,
     clientId: process.env.APP_USER_KAFKA_CLIENT_ID!,
     groupId: process.env.APP_USER_KAFKA_GROUP_ID!,
     sasl: {
-      mechanism: process.env.APP_KAFKA_SASL_MECHANISM!  as "plain" | "scram-sha-256" | "scram-sha-512",
+      mechanism: process.env.APP_KAFKA_SASL_MECHANISM! as "plain" | "scram-sha-256" | "scram-sha-512",
       username: process.env.APP_KAFKA_SASL_USERNAME!,
       password: process.env.APP_KAFKA_SASL_PASSWORD!,
     },

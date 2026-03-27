@@ -60,7 +60,7 @@ export class UserController {
             return res.status(400).json(new ApiResponse(400, null, "No file uploaded"));
         }
 
-        const { avatarPath, profile } = await userService.updateAvatar(req.user.id, req.file.filename);
+        const { avatarPath, profile } = await userService.updateAvatar(req.user.id, req.file.path, req.file.filename);
         return res.status(200).json(new ApiResponse(200, { avatar: avatarPath, profile }, "Avatar uploaded successfully"));
     });
 

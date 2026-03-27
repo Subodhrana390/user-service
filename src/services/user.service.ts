@@ -1,15 +1,10 @@
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-import { config } from "../config/index.js";
+import cloudinary from "../config/cloudinary.js";
 import { EVENT_TYPES, KafkaManager } from "../infra/kafka/index.js";
+import { config } from "../config/index.js";
 import UserPreferences from "../models/user-preferences.model.js";
 import UserProfile from "../models/user-profile.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { UpdateMedicalDataInput, UpdatePreferencesInput, UpdateProfileInput } from "../validators/user.validator.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export class UserService {
     async getProfile(userId: string) {
@@ -90,11 +85,10 @@ export class UserService {
     }
 
     async uploadVerificationDocument(userId: string, documentData: any, file: Express.Multer.File) {
-        const filePath = `/uploads/documents/${file.filename}`;
-
         const document = {
             ...documentData,
-            fileUrl: filePath,
+            fileUrl: file.path,
+            publicId: file.filename,
             status: "pending",
             uploadedAt: new Date(),
         };
@@ -115,31 +109,38 @@ export class UserService {
         return profile.verificationDocuments;
     }
 
-    async updateAvatar(userId: string, filename: string) {
-        const avatarPath = `/uploads/avatars/${filename}`;
+    async updateAvatar(userId: string, url: string, publicId: string) {
+        const profile = await UserProfile.findOne({ userId });
+        
+        if (profile?.avatarPublicId) {
+            try {
+                await cloudinary.uploader.destroy(profile.avatarPublicId);
+            } catch (err) {
+                console.error("Failed to delete old avatar from Cloudinary:", err);
+            }
+        }
 
-        const profile = await UserProfile.findOneAndUpdate(
+        const updatedProfile = await UserProfile.findOneAndUpdate(
             { userId },
-            { avatar: avatarPath, lastProfileUpdate: new Date() },
+            { avatar: url, avatarPublicId: publicId, lastProfileUpdate: new Date() },
             { upsert: true, new: true }
         );
 
-        return { avatarPath, profile };
+        return { avatarPath: url, profile: updatedProfile };
     }
 
     async deleteAvatar(userId: string) {
         const profile = await UserProfile.findOne({ userId });
 
-        if (profile?.avatar) {
-            const filePath = path.join(__dirname, "../../../", profile.avatar);
+        if (profile?.avatarPublicId) {
             try {
-                await fs.access(filePath);
-                await fs.unlink(filePath);
+                await cloudinary.uploader.destroy(profile.avatarPublicId);
             } catch (err) {
-                console.error("Failed to delete avatar file:", err);
+                console.error("Failed to delete avatar from Cloudinary:", err);
             }
 
             profile.avatar = "";
+            profile.avatarPublicId = "";
             profile.lastProfileUpdate = new Date();
             await profile.save();
         }

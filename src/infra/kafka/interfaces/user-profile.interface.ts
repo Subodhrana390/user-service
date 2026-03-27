@@ -27,6 +27,8 @@ export interface IEmergencyContact {
 export interface IVerificationDocument {
   type: "aadhar" | "pan" | "license" | "passport";
   documentId: string;
+  fileUrl: string;
+  publicId?: string;
   status: "pending" | "approved" | "rejected";
   uploadedAt: Date;
 }
@@ -36,6 +38,7 @@ export interface IUserProfile extends Document {
   userId: string;
   name: string;
   avatar: string;
+  avatarPublicId?: string;
   email: string;
   role: "user" | "shop-owner" | "admin" | "rider";
   isActive: boolean;

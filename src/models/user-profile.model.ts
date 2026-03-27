@@ -80,6 +80,7 @@ const userProfileSchema = new Schema<IUserProfile>(
 
     name: { type: String, trim: true, default: "" },
     avatar: { type: String, default: "" },
+    avatarPublicId: { type: String, default: "" },
     email: { type: String, trim: true, default: "", immutable: true },
 
     role: {
@@ -135,6 +136,7 @@ const userProfileSchema = new Schema<IUserProfile>(
         },
         documentId: { type: String, required: true },
         fileUrl: { type: String, required: true },
+        publicId: { type: String, default: "" },
         status: {
           type: String,
           enum: ["pending", "approved", "rejected"],
