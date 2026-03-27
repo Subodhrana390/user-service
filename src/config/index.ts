@@ -1,9 +1,11 @@
 import dotenv from "dotenv";
 import fs from 'fs';
+import path from "path/win32";
 
 dotenv.config({});
+const nodeEnv = process.env.NODE_ENV || 'development';
 
-const caPath = '/etc/secrets/ca.pem';
+const caPath = nodeEnv === 'production' ? '/etc/secrets/ca.pem' : path.resolve(process.cwd(), 'src/certs/ca.pem');
 
 const getCA = (): string[] | undefined => {
   if (fs.existsSync(caPath)) {
@@ -45,13 +47,11 @@ export interface Config {
     };
   };
   cloudinary: {
-    cloudname: string;
+    cloudName: string;
     apiKey: string;
     apiSecret: string;
   };
 }
-
-const nodeEnv = process.env.NODE_ENV || 'development';
 
 export const config: Config = {
   env: nodeEnv,
@@ -86,7 +86,7 @@ export const config: Config = {
     },
   },
   cloudinary: {
-    cloudname: process.env.APP_CLOUDINARY_CLOUD_NAME!,
+    cloudName: process.env.APP_CLOUDINARY_CLOUD_NAME!,
     apiKey: process.env.APP_CLOUDINARY_API_KEY!,
     apiSecret: process.env.APP_CLOUDINARY_API_SECRET!,
   },
