@@ -2,9 +2,8 @@ import { z } from "zod";
 
 export const addressSchema = z.object({
     _id: z.string().optional(),
-
     type: z.enum(["home", "work", "billing", "shipping", "other"]).optional(),
-
+    full_name: z.string().min(3).max(100),
     street: z.string().trim().min(1, "Street is required").optional(),
     city: z.string().trim().min(1, "City is required").optional(),
     state: z.string().trim().min(1, "State is required").optional(),
@@ -16,10 +15,10 @@ export const addressSchema = z.object({
         .regex(/^[6-9]\d{9}$/, "Invalid Indian mobile number")
         .optional(),
 
-    coordinates: z
+    location: z
         .object({
-            latitude: z.number().optional(),
-            longitude: z.number().optional(),
+            type: z.literal("Point").default("Point"),
+            coordinates: z.array(z.number()).length(2).optional(),
         })
         .optional(),
 
@@ -143,7 +142,7 @@ export const reviewDocumentSchema = z.object({
 export const updateAddressSchema = z
     .object({
         type: z.enum(["home", "work", "billing", "shipping", "other"]).optional(),
-
+        full_name: z.string().min(3).max(100).optional(),
         street: z.string().trim().min(1, "Street cannot be empty").optional(),
         city: z.string().trim().min(1, "City cannot be empty").optional(),
         state: z.string().trim().min(1, "State cannot be empty").optional(),
@@ -160,10 +159,10 @@ export const updateAddressSchema = z
             .regex(/^[6-9]\d{9}$/, "Invalid Indian mobile number")
             .optional(),
 
-        coordinates: z
+        location: z
             .object({
-                latitude: z.number().optional(),
-                longitude: z.number().optional(),
+                type: z.literal("Point").default("Point"),
+                coordinates: z.array(z.number()).length(2).optional(),
             })
             .optional(),
 

@@ -5,30 +5,54 @@ import { EVENT_TYPES, KafkaManager } from "../infra/kafka/index.js";
 import { config } from "../config/index.js";
 
 export class AdminService {
-    async getAllUsers(limit: number, cursor?: string) {
+    async getAllUsers(limit: number, before?: string, after?: string) {
         const query: any = {};
+        let sortDirection: 1 | -1 = -1;
 
-        if (cursor) {
-            query._id = { $lt: cursor };
+        const activeCursor = after || before;
+
+        if (activeCursor) {
+            const [timeStr, id] = activeCursor.split('|');
+            const date = new Date(timeStr);
+            const operator = after ? '$lt' : '$gt';
+            sortDirection = after ? -1 : 1;
+
+            query.$or = [
+                { createdAt: { [operator]: date } },
+                {
+                    createdAt: date,
+                    id: { [after ? '$lt' : '$gt']: id }
+                }
+            ];
         }
 
-        const users = await UserProfile.find(query)
-            .select("userId email name role isActive isVerified lastProfileUpdate createdAt")
-            .sort({ _id: -1 })
+        let users = await UserProfile.find(query)
+            .select("id email name role isActive isVerified lastProfileUpdate createdAt")
+            .sort({ createdAt: sortDirection, id: sortDirection })
             .limit(limit + 1)
             .lean();
 
-        const hasNextPage = users.length > limit;
-        if (hasNextPage) users.pop();
+        if (before) {
+            users.reverse();
+        }
 
-        const nextCursor = hasNextPage ? users[users.length - 1]._id.toString() : null;
+        const hasMore = users.length > limit;
+        if (hasMore) {
+            if (before) users.shift();
+            else users.pop();
+        }
+
+        const createCursor = (user: any) =>
+            user ? `${user.createdAt.toISOString()}|${user.id}` : null;
 
         return {
             users,
             pagination: {
-                nextCursor,
+                prevCursor: users.length > 0 ? createCursor(users[0]) : null,
+                nextCursor: users.length > 0 ? createCursor(users[users.length - 1]) : null,
+                hasPrevious: !!before || (after && hasMore),
+                hasNext: !!after || (!before && hasMore),
                 limit,
-                hasNextPage,
             },
         };
     }

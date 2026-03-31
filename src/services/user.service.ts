@@ -111,7 +111,7 @@ export class UserService {
 
     async updateAvatar(userId: string, url: string, publicId: string) {
         const profile = await UserProfile.findOne({ userId });
-        
+
         if (profile?.avatarPublicId) {
             try {
                 await cloudinary.uploader.destroy(profile.avatarPublicId);

@@ -13,7 +13,7 @@ const avatarUpload = createMulterUpload("avatars");
 const documentUpload = createMulterUpload("documents");
 
 // ---------------- AUTH ----------------
-userRoutes.use(protect as any);
+userRoutes.use(protect);
 
 // ---------------- PROFILE ----------------
 userRoutes.get("/profile", userController.getMyProfile);
@@ -64,7 +64,7 @@ userRoutes.get("/preferences", userController.getMyPreferences);
 userRoutes.patch("/preferences", userController.updateMyPreferences);
 
 // ================= ADMIN ROUTES =================
-userRoutes.use("/admin", authorize("admin") as any);
+userRoutes.use("/admin", authorize("admin"));
 
 // ---------------- USERS ----------------
 userRoutes.get("/admin/users", adminController.getAllUsers);

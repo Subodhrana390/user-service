@@ -1,18 +1,21 @@
 import { Document } from "mongoose";
 
+export interface ILocation {
+  type: "Point";
+  coordinates: [number, number];
+}
+
 export interface IAddress {
   id: string;
   type: "home" | "work" | "billing" | "shipping" | "other";
+  full_name: string;
   street: string;
   city: string;
   state: string;
   postalCode: string;
   country: string;
   phone: string;
-  coordinates?: {
-    latitude?: number;
-    longitude?: number;
-  };
+  location: ILocation;
   isDefault: boolean;
 }
 
@@ -31,6 +34,7 @@ export interface IVerificationDocument {
   publicId?: string;
   status: "pending" | "approved" | "rejected";
   uploadedAt: Date;
+  remarks?: string;
 }
 
 export interface IUserProfile extends Document {

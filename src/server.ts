@@ -1,10 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 import app from "./app.js";
-import { KafkaManager } from "./src/infra/kafka/index.js";
-import { handleUserEvents } from "./src/events/userEventHandler.js";
+import { KafkaManager } from "./infra/kafka/index.js";
+import { handleUserEvents } from "./events/userEventHandler.js";
 import mongoose from "mongoose";
-import { config } from "./src/config/index.js";
+import { config } from "./config/index.js";
 
 const PORT = config.service.port || 3002;
 

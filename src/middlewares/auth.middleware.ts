@@ -2,40 +2,59 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/index.js";
 
-export const protect = (req: Request, res: Response, next: NextFunction) => {
+interface JwtPayload {
+    id: string;
+    role: string;
+}
+
+/**
+ * Middleware to protect routes and verify JWT
+ */
+export const protect = (req: Request, _: Response, next: NextFunction) => {
     const header = req.headers.authorization;
+
     if (!header || !header.startsWith("Bearer ")) {
         const error: any = new Error("No token provided");
         error.statusCode = 401;
-        throw error;
+        return next(error);
     }
 
     const token = header.split(" ")[1];
+
     try {
         const decoded = jwt.verify(
             token,
-            config.jwt.accessSecret,
-        );
-        req.user = decoded as { id: string; role: string };
+            config.jwt.accessSecret
+        ) as JwtPayload;
+
+        req.user = {
+            id: decoded.id,
+            role: decoded.role,
+        };
+
         next();
     } catch (err: any) {
         err.statusCode = 401;
-        throw err;
+        err.message = "Invalid or expired token";
+        next(err);
     }
 };
 
+/**
+ * Middleware to restrict access based on user roles
+ */
 export const authorize = (...roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (req: Request, _: Response, next: NextFunction) => {
         if (!req.user) {
-            const error: any = new Error("Not authorized to access this resource");
+            const error: any = new Error("Authentication required");
             error.statusCode = 401;
-            throw error;
+            return next(error);
         }
 
         if (!roles.includes(req.user.role)) {
-            const error: any = new Error("Not authorized to access this resource");
+            const error: any = new Error(`Role '${req.user.role}' is not authorized to access this resource`);
             error.statusCode = 403;
-            throw error;
+            return next(error);
         }
 
         next();

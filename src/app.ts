@@ -3,9 +3,9 @@ import express, { Request, Response } from "express";
 import fs from "fs";
 import helmet from "helmet";
 import path from "path";
-import { errorMiddleware } from "./src/middlewares/error.middleware.js";
-import userInternalRouter from "./src/routes/internal/user-internal.routes.js";
-import userRouter from "./src/routes/user.routes.js";
+import { errorMiddleware } from "./middlewares/error.middleware.js";
+import userInternalRouter from "./routes/internal/user-internal.routes.js";
+import userRouter from "./routes/user.routes.js";
 
 const app = express();
 

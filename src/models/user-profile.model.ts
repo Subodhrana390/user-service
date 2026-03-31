@@ -3,8 +3,24 @@ import { v4 as uuidv4 } from "uuid";
 import {
   IAddress,
   IEmergencyContact,
+  ILocation,
   IUserProfile,
 } from "../infra/kafka/interfaces/user-profile.interface.js";
+
+const locationSchema = new Schema<ILocation>(
+  {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point",
+    },
+    coordinates: {
+      type: [Number],
+      required: true,
+    },
+  },
+  { _id: false },
+);
 
 const addressSchema = new Schema<IAddress>(
   {
@@ -18,7 +34,7 @@ const addressSchema = new Schema<IAddress>(
       default: "home",
       required: true,
     },
-
+    full_name: { type: String, trim: true, required: true },
     street: { type: String, trim: true, required: true },
     city: { type: String, trim: true, required: true },
     state: { type: String, trim: true, required: true },
@@ -34,9 +50,12 @@ const addressSchema = new Schema<IAddress>(
       ],
     },
 
-    coordinates: {
-      latitude: { type: Number },
-      longitude: { type: Number },
+    location: {
+      type: locationSchema,
+      default: {
+        type: "Point",
+        coordinates: [0, 0],
+      },
     },
 
     isDefault: {
@@ -169,6 +188,7 @@ const userProfileSchema = new Schema<IUserProfile>(
 );
 
 userProfileSchema.index({ createdAt: -1 });
+userProfileSchema.index({ createdAt: -1, id: -1 });
 
 userProfileSchema.pre("save", function (next) {
   this.lastProfileUpdate = new Date();

@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node-dev --esm --respawn --transpile-only src/server.ts"
+    "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
