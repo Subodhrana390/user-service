@@ -1,7 +1,8 @@
 import { EVENT_TYPES } from "../infra/kafka/eventTypes.js";
 import UserPreferences from "../models/user-preferences.model.js";
 import UserProfile from "../models/user-profile.model.js";
-import { IKafkaEvent } from "../infra/kafka/kafkaClient.js";
+import { IKafkaEvent, KafkaManager } from "../infra/kafka/kafkaClient.js";
+import { config } from "../config/index.js";
 
 /**
  * Handle user-related events from Kafka with Idempotency and Validation
@@ -27,6 +28,7 @@ export const handleUserEvents = async (event: IKafkaEvent, context: any) => {
             case EVENT_TYPES.USER_SHOP_OWNER_ROLE_GRANTED:
                 await handleShopOwnerRoleGranted(data);
                 break;
+
         }
     } catch (error: any) {
         console.error(`❌ Handler Error [${type}]:`, error.message);

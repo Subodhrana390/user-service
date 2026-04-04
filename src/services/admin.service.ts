@@ -27,7 +27,7 @@ export class AdminService {
         }
 
         let users = await UserProfile.find(query)
-            .select("id email name role isActive isVerified lastProfileUpdate createdAt")
+            .select("id email name role userId isActive isVerified lastProfileUpdate createdAt")
             .sort({ createdAt: sortDirection, id: sortDirection })
             .limit(limit + 1)
             .lean();
@@ -51,9 +51,8 @@ export class AdminService {
                 prevCursor: users.length > 0 ? createCursor(users[0]) : null,
                 nextCursor: users.length > 0 ? createCursor(users[users.length - 1]) : null,
                 hasPrevious: !!before || (after && hasMore),
-                hasNext: !!after || (!before && hasMore),
-                limit,
-            },
+                hasNext: !!after || (!before && hasMore)
+            }
         };
     }
 
@@ -76,10 +75,8 @@ export class AdminService {
         };
     }
 
-    async updateUser(userId: string, updates: any) {
-        updates.lastProfileUpdate = new Date();
-
-        const profile = await UserProfile.findOneAndUpdate({ userId }, updates, {
+    async updateRole(userId: string, role: string) {
+        const profile = await UserProfile.findOneAndUpdate({ userId }, { role }, {
             new: true,
             runValidators: true,
         });
@@ -111,15 +108,15 @@ export class AdminService {
         return true;
     }
 
-    async reactivateAccount(userId: string, updatedBy: string) {
+    async updateStatus(userId: string, status: string, updatedBy: string) {
         const profile = await UserProfile.findOneAndUpdate(
-            { userId, isActive: false },
-            { isActive: true, lastProfileUpdate: new Date() },
+            { userId },
+            { isActive: status, lastProfileUpdate: new Date() },
             { new: true }
         );
 
         if (!profile) {
-            throw new ApiError(409, "Account is already active");
+            throw new ApiError(404, "User does not exist");
         }
 
         await KafkaManager.publish({
@@ -135,6 +132,32 @@ export class AdminService {
 
         return profile;
     }
+    async verifyUser(userId: string, status: string, updatedBy: string) {
+        const profile = await UserProfile.findOneAndUpdate(
+            { userId },
+            { isVerified: status, lastProfileUpdate: new Date() },
+            { new: true }
+        );
+
+        if (!profile) {
+            throw new ApiError(404, "User does not exist");
+        }
+
+        await KafkaManager.publish({
+            topic: config.kafka.topics.userEvents,
+            eventType: EVENT_TYPES.USER_REACTIVATED,
+            payload: {
+                userId: userId.toString(),
+                changes: { isVerified: status },
+                updatedBy,
+            },
+            metadata: { userId: userId.toString() },
+        });
+
+        return profile;
+    }
+
+
 
     async reviewVerificationDocument(userId: string, documentId: string, status: "approved" | "rejected", note?: string) {
         const profile = await UserProfile.findOne({ userId });
@@ -143,7 +166,7 @@ export class AdminService {
             throw new ApiError(404, "User profile not found");
         }
 
-        const document = (profile.verificationDocuments as any).find((d: any) => d._id?.toString() === documentId || d.id === documentId);
+        const document = (profile.verificationDocuments as any).find((d: any) => d.id === documentId);
 
         if (!document) {
             throw new ApiError(404, "Verification document not found");
@@ -155,15 +178,6 @@ export class AdminService {
 
         document.status = status;
         if (note) document.adminNote = note;
-
-        if (status === "approved") {
-            const allApproved = profile.verificationDocuments.every(
-                (doc: any) => doc.status === "approved"
-            );
-            if (allApproved) profile.isVerified = true;
-        } else if (status === "rejected") {
-            profile.isVerified = false;
-        }
 
         profile.lastProfileUpdate = new Date();
         await profile.save();

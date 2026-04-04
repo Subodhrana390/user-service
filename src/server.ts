@@ -5,6 +5,7 @@ import { KafkaManager } from "./infra/kafka/index.js";
 import { handleUserEvents } from "./events/userEventHandler.js";
 import mongoose from "mongoose";
 import { config } from "./config/index.js";
+import { handleShopEvents } from "./events/shopEventHandler.js";
 
 const PORT = config.service.port || 3002;
 
@@ -17,9 +18,15 @@ const startServer = async () => {
 
         await KafkaManager.subscribe({
             topic: config.kafka.topics.userEvents,
-            groupId: config.kafka.groupId,
             handler: handleUserEvents,
         });
+
+        await KafkaManager.subscribe({
+            topic: config.kafka.topics.shopEvents,
+            handler: handleShopEvents,
+        });
+
+        await KafkaManager.runConsumer(config.kafka.groupId);
 
         const shutdown = async (signal: NodeJS.Signals) => {
             console.log(`\n🛑 ${signal} received. Shutting down...`);
@@ -32,8 +39,6 @@ const startServer = async () => {
             });
         };
 
-        process.on("SIGINT", shutdown);
-        process.on("SIGTERM", shutdown);
     } catch (error) {
         console.error("❌ Service startup failed:", error);
         process.exit(1);

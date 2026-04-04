@@ -64,18 +64,19 @@ userRoutes.get("/preferences", userController.getMyPreferences);
 userRoutes.patch("/preferences", userController.updateMyPreferences);
 
 // ================= ADMIN ROUTES =================
-userRoutes.use("/admin", authorize("admin"));
+userRoutes.use(authorize("admin"));
 
 // ---------------- USERS ----------------
-userRoutes.get("/admin/users", adminController.getAllUsers);
-userRoutes.get("/admin/users/:userId", adminController.getUserById);
-userRoutes.patch("/admin/users/:userId", adminController.updateUser);
-userRoutes.delete("/admin/users/:userId", adminController.deleteUser);
-userRoutes.patch("/admin/users/:userId/reactivate", adminController.reactivateAccount);
+userRoutes.get("/", adminController.getAllUsers);
+userRoutes.get("/:userId", adminController.getUserById);
+userRoutes.patch("/:userId/role", adminController.updateRole);
+userRoutes.patch("/:userId/status", adminController.updateStatus);
+userRoutes.patch("/:userId/verify", adminController.verifyUser);
+userRoutes.delete("/:userId", adminController.deleteUser);
 
 // ---------------- ADMIN VERIFICATION ----------------
 userRoutes.patch(
-    "/admin/verification-documents/:userId/:documentId",
+    "/verification-documents/:userId/:documentId",
     adminController.approveVerificationDocument,
 );
 

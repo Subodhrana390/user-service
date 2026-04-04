@@ -22,11 +22,19 @@ export class AdminController {
         return res.status(200).json(new ApiResponse(200, result, "User profile fetched successfully"));
     });
 
-    updateUser = asyncHandler(async (req: Request, res: Response) => {
+    updateRole = asyncHandler(async (req: Request, res: Response) => {
         const { userId } = userIdSchema.parse(req.params);
-        const updates = updateProfileSchema.parse(req.body);
-        const profile = await adminService.updateUser(userId, updates);
-        return res.status(200).json(new ApiResponse(200, profile, "User updated successfully"));
+        const role = req.body.role;
+        const profile = await adminService.updateRole(userId, role);
+        return res.status(200).json(new ApiResponse(200, profile, "User role updated successfully"));
+    });
+
+    verifyUser = asyncHandler(async (req: Request, res: Response) => {
+        if (!req.user) throw new Error("Not authenticated");
+        const { userId } = userIdSchema.parse(req.params);
+        const status = req.body.status;
+        const profile = await adminService.verifyUser(userId, status, req.user.id);
+        return res.status(200).json(new ApiResponse(200, profile, "User role updated successfully"));
     });
 
     deleteUser = asyncHandler(async (req: Request, res: Response) => {
@@ -37,18 +45,19 @@ export class AdminController {
         return res.status(200).json(new ApiResponse(200, null, "User deleted successfully"));
     });
 
-    reactivateAccount = asyncHandler(async (req: Request, res: Response) => {
+    updateStatus = asyncHandler(async (req: Request, res: Response) => {
         if (!req.user) throw new Error("Not authenticated");
         const { userId } = userIdSchema.parse(req.params);
-        const profile = await adminService.reactivateAccount(userId, req.user.id);
-        return res.status(200).json(new ApiResponse(200, profile, "Account reactivated successfully"));
+        const status = req.body.status;
+        const profile = await adminService.updateStatus(userId, status, req.user.id);
+        return res.status(200).json(new ApiResponse(200, profile, "Account status updated successfully"));
     });
 
     approveVerificationDocument = asyncHandler(async (req: Request, res: Response) => {
+        if (!req.user) throw new Error("Not authenticated");
         const { userId } = userIdSchema.parse(req.params);
         const documentId = req.params.documentId as string;
         const { status, note } = reviewDocumentSchema.parse(req.body);
-
         const result = await adminService.reviewVerificationDocument(userId, documentId, status, note);
         return res.status(200).json(new ApiResponse(200, result, `Verification document ${status}`));
     });

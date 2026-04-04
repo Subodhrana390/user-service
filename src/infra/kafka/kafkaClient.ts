@@ -1,4 +1,4 @@
-import { Admin,SASLOptions, Consumer, Kafka, Producer } from "kafkajs";
+import { Admin, SASLOptions, Consumer, Kafka, Producer } from "kafkajs";
 import { v4 as uuidv4 } from "uuid";
 import { config } from "../../config/index.js";
 
@@ -7,7 +7,6 @@ const sasl: SASLOptions = {
   username: config.kafka.sasl.username,
   password: config.kafka.sasl.password,
 };
-
 
 const kafka = new Kafka({
   clientId: config.kafka.clientId,
@@ -25,6 +24,8 @@ const kafka = new Kafka({
 let producer: Producer | null = null;
 let consumer: Consumer | null = null;
 let admin: Admin | null = null;
+
+const handlers = new Map(); // ✅ handler storage
 
 export interface IKafkaEvent<T = any> {
   id: string;
@@ -57,9 +58,11 @@ export const KafkaManager = {
         heartbeatInterval: 3000,
         rebalanceTimeout: 60000,
       });
+
       await consumer.connect();
       console.log("📥 Kafka Consumer connected");
     }
+
     return consumer;
   },
 
@@ -85,10 +88,7 @@ export const KafkaManager = {
       service: config.kafka.clientId,
       version: "1.0",
       data: payload,
-      metadata: {
-        ...metadata,
-        userId: metadata.userId,
-      },
+      metadata,
     };
 
     if (schema) schema.parse(event);
@@ -108,6 +108,7 @@ export const KafkaManager = {
     });
 
     console.log(`✅ Event published → ${event.type}`);
+
     return event;
   },
 
@@ -124,39 +125,67 @@ export const KafkaManager = {
 
     await consumer.subscribe({ topic, fromBeginning: false });
 
+    handlers.set(topic, handler); // ✅ store handler
+
+    console.log(`📥 Subscribed → ${topic}`);
+  },
+
+  async runConsumer(groupId?: string) {
+    const consumer = await this.getConsumer(groupId);
+
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         try {
           if (!message.value) return;
-          const event: IKafkaEvent = JSON.parse(message.value.toString());
-          const currentService = process.env.KAFKA_CLIENT_ID || "user-service";
+
+          const event: IKafkaEvent = JSON.parse(
+            message.value.toString()
+          );
+
+          const currentService =
+            process.env.KAFKA_CLIENT_ID || "user-service";
 
           if (event.service === currentService) return;
 
-          await handler(event, {
-            topic,
-            partition,
-            offset: message.offset,
-            headers: message.headers,
-          });
+          const handler = handlers.get(topic);
+
+          if (handler) {
+            await handler(event, {
+              topic,
+              partition,
+              offset: message.offset,
+              headers: message.headers,
+            });
+          }
         } catch (err) {
           console.error("❌ Kafka message processing error:", err);
         }
       },
     });
 
-    console.log(`📥 Subscribed → ${topic}`);
+    console.log("🚀 Kafka consumer running");
   },
 
   async shutdown(): Promise<void> {
     try {
-      if (producer) await producer.disconnect();
-      if (consumer) await consumer.disconnect();
-      if (admin) await (admin as any).disconnect();
+      if (producer) {
+        await producer.disconnect();
+        producer = null;
+      }
+
+      if (consumer) {
+        await consumer.disconnect();
+        consumer = null;
+      }
+
+      if (admin !== null) {
+        await admin.disconnect();
+        admin = null;
+      }
 
       console.log("🛑 Kafka connections closed");
     } catch (err) {
       console.error("❌ Kafka shutdown error:", err);
     }
-  },
+  }
 };

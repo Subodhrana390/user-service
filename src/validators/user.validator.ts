@@ -118,7 +118,7 @@ export const getUsersSchema = z.object({
 });
 
 export const userIdSchema = z.object({
-    userId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid user ID format"),
+    userId: z.string().min(1, "User ID is required"),
 });
 
 export const fileValidationSchema = z.object({
